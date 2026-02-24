@@ -40,10 +40,14 @@ fun ChildDetailScreen(
     childViewModel: ChildViewModel = viewModel(),
     growthViewModel: GrowthViewModel = viewModel()
 ) {
-    val child by childViewModel.getChildById(childId).collectAsState()
-    val records by growthViewModel.getRecordsByChildId(childId).collectAsState()
+    // remember(childId) で childId が変わったときだけ新しい Flow を生成し、
+    // 無関係なリコンポーズで StateFlow が再生成されてデータが一瞬消えるのを防ぐ
+    val child by remember(childId) { childViewModel.getChildById(childId) }.collectAsState()
+    val records by remember(childId) { growthViewModel.getRecordsByChildId(childId) }.collectAsState()
     val periodFilter by growthViewModel.periodFilter.collectAsState()
-    val filteredRecords by growthViewModel.getFilteredRecords(childId).collectAsState(initial = emptyList())
+    val filteredRecords by remember(childId) {
+        growthViewModel.getFilteredRecords(childId)
+    }.collectAsState(initial = emptyList())
 
     var showDeleteDialog by remember { mutableStateOf(false) }
     var recordToDelete by remember { mutableStateOf<GrowthRecord?>(null) }
