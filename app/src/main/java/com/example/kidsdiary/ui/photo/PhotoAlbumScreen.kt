@@ -1,6 +1,7 @@
 package com.example.kidsdiary.ui.photo
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -186,6 +187,7 @@ private fun MonthNavigator(
 /**
  * 写真サムネイルコンポーネント
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun PhotoThumbnail(
     photo: Photo,
@@ -201,7 +203,7 @@ private fun PhotoThumbnail(
             contentDescription = photo.comment ?: "写真",
             modifier = Modifier
                 .fillMaxSize()
-                .clickable(
+                .combinedClickable(
                     onLongClick = onLongClick,
                     onClick = {}
                 ),

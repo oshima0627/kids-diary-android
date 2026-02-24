@@ -26,7 +26,6 @@ class GrowthViewModel(application: Application) : AndroidViewModel(application) 
         ALL             // 全期間
     }
 
-    private val _selectedChildId = MutableStateFlow<Long>(-1L)
     private val _periodFilter = MutableStateFlow(PeriodFilter.ALL)
 
     /** 現在選択中の期間フィルター */
