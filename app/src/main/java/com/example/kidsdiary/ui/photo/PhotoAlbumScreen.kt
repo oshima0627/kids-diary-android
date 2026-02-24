@@ -40,7 +40,11 @@ fun PhotoAlbumScreen(
     var currentYear by remember { mutableIntStateOf(now.get(Calendar.YEAR)) }
     var currentMonth by remember { mutableIntStateOf(now.get(Calendar.MONTH) + 1) }
 
-    val photos by photoViewModel.getPhotosByMonth(childId, currentYear, currentMonth).collectAsState()
+    // remember で year/month が変わったときだけ新しい Flow を生成し、
+    // 無関係なリコンポーズで StateFlow が再生成されてリストが一瞬消えるのを防ぐ
+    val photos by remember(childId, currentYear, currentMonth) {
+        photoViewModel.getPhotosByMonth(childId, currentYear, currentMonth)
+    }.collectAsState()
     var selectedPhoto by remember { mutableStateOf<Photo?>(null) }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
