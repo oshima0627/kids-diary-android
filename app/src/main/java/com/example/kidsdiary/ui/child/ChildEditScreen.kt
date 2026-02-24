@@ -38,9 +38,10 @@ fun ChildEditScreen(
     childViewModel: ChildViewModel = viewModel()
 ) {
     val isEditMode = childId != null
-    val existingChild = if (isEditMode) {
-        childViewModel.getChildById(childId!!).collectAsState().value
-    } else null
+    // collectAsState() は Composable のルール上、条件分岐の外で常に呼び出す必要がある
+    // childId が null のとき -1L を渡すと Room からは null が返るため問題ない
+    val existingChildState by childViewModel.getChildById(childId ?: -1L).collectAsState()
+    val existingChild = if (isEditMode) existingChildState else null
 
     var name by remember { mutableStateOf("") }
     var birthDate by remember { mutableStateOf<Long?>(null) }

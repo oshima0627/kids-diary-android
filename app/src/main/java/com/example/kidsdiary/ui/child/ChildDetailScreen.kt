@@ -1,6 +1,5 @@
 package com.example.kidsdiary.ui.child
 
-import android.view.ViewGroup
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,7 +16,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.kidsdiary.data.model.Child
 import com.example.kidsdiary.data.model.GrowthRecord
 import com.example.kidsdiary.viewmodel.ChildViewModel
 import com.example.kidsdiary.viewmodel.GrowthViewModel
@@ -261,7 +259,7 @@ private fun GrowthChart(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            GrowthViewModel.PeriodFilter.values().forEach { filter ->
+            GrowthViewModel.PeriodFilter.entries.forEach { filter ->
                 FilterChip(
                     selected = periodFilter == filter,
                     onClick = { onFilterChange(filter) },
@@ -313,15 +311,7 @@ private fun GrowthChart(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
             )
             AndroidView(
-                factory = { context ->
-                    LineChart(context).apply {
-                        layoutParams = ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            400
-                        )
-                        setupChart(this, heightEntries, dateLabels, heightColor.toArgb(), "身長(cm)")
-                    }
-                },
+                factory = { context -> LineChart(context) },
                 update = { chart ->
                     setupChart(chart, heightEntries, dateLabels, heightColor.toArgb(), "身長(cm)")
                 },
@@ -338,15 +328,7 @@ private fun GrowthChart(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
             )
             AndroidView(
-                factory = { context ->
-                    LineChart(context).apply {
-                        layoutParams = ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            400
-                        )
-                        setupChart(this, weightEntries, dateLabels, weightColor.toArgb(), "体重(kg)")
-                    }
-                },
+                factory = { context -> LineChart(context) },
                 update = { chart ->
                     setupChart(chart, weightEntries, dateLabels, weightColor.toArgb(), "体重(kg)")
                 },
