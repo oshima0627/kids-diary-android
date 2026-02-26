@@ -50,11 +50,7 @@ class GrowthViewModel(application: Application) : AndroidViewModel(application) 
                 PeriodFilter.ONE_YEAR -> getDateBefore(12)
                 PeriodFilter.ALL -> 0L
             }
-            if (fromDate == 0L) {
-                repository.getRecordsByChildId(childId)
-            } else {
-                repository.getRecordsSince(childId, fromDate)
-            }
+            repository.getRecordsSince(childId, fromDate)
         }
     }
 
