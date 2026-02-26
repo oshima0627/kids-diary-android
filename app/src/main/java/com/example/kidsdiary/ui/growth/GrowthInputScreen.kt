@@ -17,6 +17,7 @@ import com.example.kidsdiary.data.model.GrowthRecord
 import com.example.kidsdiary.viewmodel.GrowthViewModel
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.TimeZone
 
 /**
  * 身長・体重入力画面
@@ -29,7 +30,14 @@ fun GrowthInputScreen(
     onNavigateBack: () -> Unit,
     growthViewModel: GrowthViewModel = viewModel()
 ) {
-    var date by remember { mutableStateOf(System.currentTimeMillis()) }
+    var date by remember {
+        val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        mutableStateOf(cal.timeInMillis)
+    }
     var heightText by remember { mutableStateOf("") }
     var weightText by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
