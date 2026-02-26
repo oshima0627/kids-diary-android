@@ -9,6 +9,7 @@ import com.example.kidsdiary.data.repository.GrowthRecordRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.Calendar
+import java.util.TimeZone
 
 /**
  * 成長記録管理の ViewModel
@@ -84,9 +85,13 @@ class GrowthViewModel(application: Application) : AndroidViewModel(application) 
     suspend fun getLatestRecord(childId: Long): GrowthRecord? =
         repository.getLatestRecord(childId)
 
-    /** 現在から指定した月数前のエポックミリ秒を返す */
+    /** 現在から指定した月数前のUTC深夜0時のエポックミリ秒を返す */
     private fun getDateBefore(months: Int): Long {
-        val cal = Calendar.getInstance()
+        val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
         cal.add(Calendar.MONTH, -months)
         return cal.timeInMillis
     }
