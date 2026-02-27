@@ -16,13 +16,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.kidsdiary.data.GrowthStandard
+import com.example.kidsdiary.data.model.Child
 import com.example.kidsdiary.data.model.GrowthRecord
 import com.example.kidsdiary.viewmodel.ChildViewModel
 import com.example.kidsdiary.viewmodel.GrowthViewModel
 import com.github.mikephil.charting.charts.LineChart
+import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.ValueFormatter
+import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -137,6 +141,7 @@ fun ChildDetailScreen(
                 )
                 1 -> GrowthChart(
                     records = filteredRecords,
+                    child = child,
                     periodFilter = periodFilter,
                     onFilterChange = { growthViewModel.setPeriodFilter(it) }
                 )
@@ -248,10 +253,13 @@ private fun GrowthRecordItem(
 
 /**
  * 成長グラフ（MPAndroidChart を使用）
+ * X軸は月齢（子供の誕生日からの経過月数）
+ * 参考範囲（3〜97パーセンタイル）を点線で表示
  */
 @Composable
 private fun GrowthChart(
     records: List<GrowthRecord>,
+    child: Child?,
     periodFilter: GrowthViewModel.PeriodFilter,
     onFilterChange: (GrowthViewModel.PeriodFilter) -> Unit
 ) {
@@ -297,16 +305,35 @@ private fun GrowthChart(
         val heightColor = Color(0xFF6650A4)
         val weightColor = Color(0xFF7D5260)
 
-        // 身長グラフ
-        val heightEntries = records.mapIndexedNotNull { index, r ->
-            r.heightCm?.let { Entry(index.toFloat(), it) }
-        }
-        // 体重グラフ
-        val weightEntries = records.mapIndexedNotNull { index, r ->
-            r.weightKg?.let { Entry(index.toFloat(), it) }
+        // 月齢を計算
+        val ageMonthsList: List<Int> = if (child != null) {
+            records.map { calculateAgeMonths(child.birthDate, it.date) }
+        } else {
+            records.indices.toList()
         }
 
-        val dateLabels = records.map { formatDateShort(it.date) }
+        // 身長・体重エントリ（X軸 = 月齢）
+        val heightEntries = records.mapIndexedNotNull { index, r ->
+            r.heightCm?.let { Entry(ageMonthsList[index].toFloat(), it) }
+        }
+        val weightEntries = records.mapIndexedNotNull { index, r ->
+            r.weightKg?.let { Entry(ageMonthsList[index].toFloat(), it) }
+        }
+
+        val minAge = ageMonthsList.minOrNull() ?: 0
+        val maxAge = ageMonthsList.maxOrNull() ?: 0
+
+        // 参考範囲エントリ（p3・p50・p97 を1ヶ月刻みで生成）
+        val gender = child?.gender ?: "male"
+        val heightRefEntries: Triple<List<Entry>, List<Entry>, List<Entry>> =
+            buildRefEntries(minAge, maxAge) { m -> GrowthStandard.getHeightReference(gender, m) }
+        val weightRefEntries: Triple<List<Entry>, List<Entry>, List<Entry>> =
+            buildRefEntries(minAge, maxAge) { m -> GrowthStandard.getWeightReference(gender, m) }
+
+        // X軸ラベル（月齢 → "Xヶ月" / "X歳Y" 表記）
+        val xLabels: Map<Int, String> = ageMonthsList.mapIndexed { i, m ->
+            m to formatAgeMonths(m)
+        }.toMap()
 
         if (heightEntries.isNotEmpty()) {
             Text(
@@ -317,11 +344,20 @@ private fun GrowthChart(
             AndroidView(
                 factory = { context -> LineChart(context) },
                 update = { chart ->
-                    setupChart(chart, heightEntries, dateLabels, heightColor.toArgb(), "身長(cm)")
+                    setupChart(
+                        chart = chart,
+                        entries = heightEntries,
+                        refP3 = heightRefEntries.first,
+                        refP50 = heightRefEntries.second,
+                        refP97 = heightRefEntries.third,
+                        xLabels = xLabels,
+                        lineColor = heightColor.toArgb(),
+                        label = "身長(cm)"
+                    )
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp)
+                    .height(220.dp)
             )
         }
 
@@ -334,50 +370,167 @@ private fun GrowthChart(
             AndroidView(
                 factory = { context -> LineChart(context) },
                 update = { chart ->
-                    setupChart(chart, weightEntries, dateLabels, weightColor.toArgb(), "体重(kg)")
+                    setupChart(
+                        chart = chart,
+                        entries = weightEntries,
+                        refP3 = weightRefEntries.first,
+                        refP50 = weightRefEntries.second,
+                        refP97 = weightRefEntries.third,
+                        xLabels = xLabels,
+                        lineColor = weightColor.toArgb(),
+                        label = "体重(kg)"
+                    )
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp)
+                    .height(220.dp)
+            )
+        }
+
+        // 参考範囲の凡例説明
+        if (child != null) {
+            Text(
+                text = "点線: 3〜97パーセンタイル範囲（日本人小児発育標準値）",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
             )
         }
     }
 }
 
-/** MPAndroidChart の折れ線グラフを設定する */
+/**
+ * minAge〜maxAge の範囲で1ヶ月刻みに参考値エントリを生成する
+ * @return Triple(p3エントリ, p50エントリ, p97エントリ)
+ */
+private fun buildRefEntries(
+    minAge: Int,
+    maxAge: Int,
+    lookup: (Int) -> GrowthStandard.Percentile?
+): Triple<List<Entry>, List<Entry>, List<Entry>> {
+    val p3List = mutableListOf<Entry>()
+    val p50List = mutableListOf<Entry>()
+    val p97List = mutableListOf<Entry>()
+    for (m in minAge..maxAge) {
+        val ref = lookup(m) ?: continue
+        p3List.add(Entry(m.toFloat(), ref.p3))
+        p50List.add(Entry(m.toFloat(), ref.p50))
+        p97List.add(Entry(m.toFloat(), ref.p97))
+    }
+    return Triple(p3List, p50List, p97List)
+}
+
+/** MPAndroidChart の折れ線グラフを設定する（参考範囲付き） */
 private fun setupChart(
     chart: LineChart,
     entries: List<Entry>,
-    labels: List<String>,
+    refP3: List<Entry>,
+    refP50: List<Entry>,
+    refP97: List<Entry>,
+    xLabels: Map<Int, String>,
     lineColor: Int,
     label: String
 ) {
+    val refGray = Color(0xFFAAAAAA).toArgb()
+    val refMedianColor = Color(0xFF4CAF50).toArgb() // 緑: 50パーセンタイル（中央値）
+
+    // 実測値データセット
     val dataSet = LineDataSet(entries, label).apply {
         color = lineColor
         setCircleColor(lineColor)
-        lineWidth = 2f
+        lineWidth = 2.5f
         circleRadius = 4f
         setDrawValues(true)
         valueTextSize = 10f
+        mode = LineDataSet.Mode.LINEAR
     }
 
+    // 3パーセンタイル（下限）
+    val dsP3 = LineDataSet(refP3, "3%ile").apply {
+        color = refGray
+        lineWidth = 1f
+        setDrawCircles(false)
+        setDrawValues(false)
+        enableDashedLine(8f, 4f, 0f)
+    }
+
+    // 50パーセンタイル（中央値）
+    val dsP50 = LineDataSet(refP50, "50%ile").apply {
+        color = refMedianColor
+        lineWidth = 1f
+        setDrawCircles(false)
+        setDrawValues(false)
+        enableDashedLine(12f, 4f, 0f)
+    }
+
+    // 97パーセンタイル（上限）
+    val dsP97 = LineDataSet(refP97, "97%ile").apply {
+        color = refGray
+        lineWidth = 1f
+        setDrawCircles(false)
+        setDrawValues(false)
+        enableDashedLine(8f, 4f, 0f)
+    }
+
+    val dataSets: MutableList<ILineDataSet> = mutableListOf()
+    if (refP3.isNotEmpty()) {
+        dataSets.add(dsP3)
+        dataSets.add(dsP50)
+        dataSets.add(dsP97)
+    }
+    dataSets.add(dataSet)
+
     chart.apply {
-        data = LineData(dataSet)
+        data = LineData(dataSets)
         description.isEnabled = false
-        legend.isEnabled = true
+        legend.apply {
+            isEnabled = true
+            form = Legend.LegendForm.LINE
+            textSize = 10f
+        }
         xAxis.apply {
             position = XAxis.XAxisPosition.BOTTOM
             granularity = 1f
             valueFormatter = object : ValueFormatter() {
                 override fun getFormattedValue(value: Float): String {
-                    val index = value.toInt()
-                    return if (index >= 0 && index < labels.size) labels[index] else ""
+                    val m = value.toInt()
+                    return xLabels[m] ?: formatAgeMonths(m)
                 }
             }
             labelRotationAngle = -30f
         }
         axisRight.isEnabled = false
+        setTouchEnabled(true)
+        isDragEnabled = true
+        setScaleEnabled(true)
         invalidate()
+    }
+}
+
+/**
+ * 誕生日と記録日から月齢（月数）を計算する
+ */
+private fun calculateAgeMonths(birthDate: Long, recordDate: Long): Int {
+    val birthCal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+    birthCal.timeInMillis = birthDate
+    val recordCal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+    recordCal.timeInMillis = recordDate
+    val years = recordCal.get(Calendar.YEAR) - birthCal.get(Calendar.YEAR)
+    val months = recordCal.get(Calendar.MONTH) - birthCal.get(Calendar.MONTH)
+    return years * 12 + months
+}
+
+/**
+ * 月齢を "Xヶ月" / "X歳" / "X歳Yヶ月" 形式に変換
+ */
+private fun formatAgeMonths(months: Int): String {
+    if (months < 0) return "${months}m"
+    val years = months / 12
+    val rem = months % 12
+    return when {
+        years == 0 -> "${months}ヶ月"
+        rem == 0   -> "${years}歳"
+        else       -> "${years}歳${rem}m"
     }
 }
 
