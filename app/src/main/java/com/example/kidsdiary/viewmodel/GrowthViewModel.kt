@@ -37,9 +37,14 @@ class GrowthViewModel(application: Application) : AndroidViewModel(application) 
         repository = GrowthRecordRepository(db.growthRecordDao())
     }
 
-    /** 指定した子供の全成長記録を取得 */
+    /** 指定した子供の全成長記録を取得（日付降順・一覧表示用） */
     fun getRecordsByChildId(childId: Long): StateFlow<List<GrowthRecord>> =
         repository.getRecordsByChildId(childId)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** 指定した子供の全成長記録を日付昇順で取得（グラフ表示用） */
+    fun getRecordsByChildIdAscending(childId: Long): StateFlow<List<GrowthRecord>> =
+        repository.getRecordsSince(childId, 0L)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     /** グラフ用: 現在の期間フィルターに基づいた成長記録を取得 */
