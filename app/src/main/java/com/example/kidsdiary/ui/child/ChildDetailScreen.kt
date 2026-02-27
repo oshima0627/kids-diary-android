@@ -48,10 +48,6 @@ fun ChildDetailScreen(
     // 無関係なリコンポーズで StateFlow が再生成されてデータが一瞬消えるのを防ぐ
     val child by remember(childId) { childViewModel.getChildById(childId) }.collectAsState()
     val records by remember(childId) { growthViewModel.getRecordsByChildId(childId) }.collectAsState()
-    val periodFilter by growthViewModel.periodFilter.collectAsState()
-    val filteredRecords by remember(childId) {
-        growthViewModel.getFilteredRecords(childId)
-    }.collectAsState(initial = emptyList())
 
     var showDeleteDialog by remember { mutableStateOf(false) }
     var recordToDelete by remember { mutableStateOf<GrowthRecord?>(null) }
@@ -140,10 +136,8 @@ fun ChildDetailScreen(
                     }
                 )
                 1 -> GrowthChart(
-                    records = filteredRecords,
-                    child = child,
-                    periodFilter = periodFilter,
-                    onFilterChange = { growthViewModel.setPeriodFilter(it) }
+                    records = records,
+                    child = child
                 )
             }
         }
@@ -259,36 +253,9 @@ private fun GrowthRecordItem(
 @Composable
 private fun GrowthChart(
     records: List<GrowthRecord>,
-    child: Child?,
-    periodFilter: GrowthViewModel.PeriodFilter,
-    onFilterChange: (GrowthViewModel.PeriodFilter) -> Unit
+    child: Child?
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        // 期間フィルター
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            GrowthViewModel.PeriodFilter.entries.forEach { filter ->
-                FilterChip(
-                    selected = periodFilter == filter,
-                    onClick = { onFilterChange(filter) },
-                    label = {
-                        Text(
-                            when (filter) {
-                                GrowthViewModel.PeriodFilter.THREE_MONTHS -> "3ヶ月"
-                                GrowthViewModel.PeriodFilter.SIX_MONTHS -> "6ヶ月"
-                                GrowthViewModel.PeriodFilter.ONE_YEAR -> "1年"
-                                GrowthViewModel.PeriodFilter.ALL -> "全期間"
-                            }
-                        )
-                    }
-                )
-            }
-        }
-
         if (records.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -387,10 +354,10 @@ private fun GrowthChart(
             )
         }
 
-        // 参考範囲の凡例説明
+        // 参考範囲の注釈
         if (child != null) {
             Text(
-                text = "点線: 3〜97パーセンタイル範囲（日本人小児発育標準値）",
+                text = "出典: こども家庭庁・文部科学省（0〜17歳 日本人小児発育標準値）",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
@@ -445,8 +412,8 @@ private fun setupChart(
         mode = LineDataSet.Mode.LINEAR
     }
 
-    // 3パーセンタイル（下限）
-    val dsP3 = LineDataSet(refP3, "3%ile").apply {
+    // 3パーセンタイル（正常範囲下限）
+    val dsP3 = LineDataSet(refP3, "正常範囲下限").apply {
         color = refGray
         lineWidth = 1f
         setDrawCircles(false)
@@ -455,7 +422,7 @@ private fun setupChart(
     }
 
     // 50パーセンタイル（中央値）
-    val dsP50 = LineDataSet(refP50, "50%ile").apply {
+    val dsP50 = LineDataSet(refP50, "中央値").apply {
         color = refMedianColor
         lineWidth = 1f
         setDrawCircles(false)
@@ -463,8 +430,8 @@ private fun setupChart(
         enableDashedLine(12f, 4f, 0f)
     }
 
-    // 97パーセンタイル（上限）
-    val dsP97 = LineDataSet(refP97, "97%ile").apply {
+    // 97パーセンタイル（正常範囲上限）
+    val dsP97 = LineDataSet(refP97, "正常範囲上限").apply {
         color = refGray
         lineWidth = 1f
         setDrawCircles(false)

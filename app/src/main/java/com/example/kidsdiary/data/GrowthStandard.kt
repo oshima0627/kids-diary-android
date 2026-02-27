@@ -62,10 +62,7 @@ object GrowthStandard {
         168 to Percentile(148.0f, 163.0f, 178.0f),
         180 to Percentile(153.0f, 167.5f, 182.0f),
         192 to Percentile(155.5f, 169.5f, 183.5f),
-        204 to Percentile(157.0f, 170.7f, 184.4f),
-        216 to Percentile(157.5f, 171.0f, 184.5f),
-        228 to Percentile(157.5f, 171.2f, 184.9f),
-        240 to Percentile(157.5f, 171.5f, 185.5f)
+        204 to Percentile(157.0f, 170.7f, 184.4f)
     )
 
     // ─── 女の子 身長 (cm) ────────────────────────────────────────
@@ -113,10 +110,7 @@ object GrowthStandard {
         168 to Percentile(143.5f, 157.0f, 170.5f),
         180 to Percentile(145.5f, 158.0f, 170.5f),
         192 to Percentile(146.5f, 158.5f, 170.5f),
-        204 to Percentile(147.0f, 158.0f, 169.0f),
-        216 to Percentile(147.5f, 158.0f, 168.5f),
-        228 to Percentile(147.5f, 158.0f, 168.5f),
-        240 to Percentile(147.5f, 158.0f, 168.5f)
+        204 to Percentile(147.0f, 158.0f, 169.0f)
     )
 
     // ─── 男の子 体重 (kg) ────────────────────────────────────────
@@ -164,10 +158,7 @@ object GrowthStandard {
         168 to Percentile(39.5f,  53.5f,  76.0f),
         180 to Percentile(44.5f,  58.0f,  79.5f),
         192 to Percentile(48.0f,  61.0f,  81.5f),
-        204 to Percentile(50.0f,  62.0f,  82.5f),
-        216 to Percentile(51.0f,  63.0f,  83.0f),
-        228 to Percentile(52.0f,  64.0f,  84.0f),
-        240 to Percentile(53.0f,  65.0f,  85.0f)
+        204 to Percentile(50.0f,  62.0f,  82.5f)
     )
 
     // ─── 女の子 体重 (kg) ────────────────────────────────────────
@@ -215,10 +206,7 @@ object GrowthStandard {
         168 to Percentile(38.5f,  51.5f,  73.5f),
         180 to Percentile(40.0f,  52.5f,  74.0f),
         192 to Percentile(40.5f,  52.5f,  74.0f),
-        204 to Percentile(41.0f,  52.6f,  74.0f),
-        216 to Percentile(41.5f,  53.0f,  74.5f),
-        228 to Percentile(42.0f,  53.5f,  75.0f),
-        240 to Percentile(42.0f,  53.5f,  75.0f)
+        204 to Percentile(41.0f,  52.6f,  74.0f)
     )
 
     /**
