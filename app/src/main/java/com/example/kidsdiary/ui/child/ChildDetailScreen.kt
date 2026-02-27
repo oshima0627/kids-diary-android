@@ -47,7 +47,10 @@ fun ChildDetailScreen(
     // remember(childId) で childId が変わったときだけ新しい Flow を生成し、
     // 無関係なリコンポーズで StateFlow が再生成されてデータが一瞬消えるのを防ぐ
     val child by remember(childId) { childViewModel.getChildById(childId) }.collectAsState()
+    // 一覧用: 新しい順(DESC)
     val records by remember(childId) { growthViewModel.getRecordsByChildId(childId) }.collectAsState()
+    // グラフ用: 古い順(ASC) — MPAndroidChart はエントリが X 昇順である必要があるため
+    val graphRecords by remember(childId) { growthViewModel.getRecordsByChildIdAscending(childId) }.collectAsState()
 
     var showDeleteDialog by remember { mutableStateOf(false) }
     var recordToDelete by remember { mutableStateOf<GrowthRecord?>(null) }
@@ -136,7 +139,7 @@ fun ChildDetailScreen(
                     }
                 )
                 1 -> GrowthChart(
-                    records = records,
+                    records = graphRecords,
                     child = child
                 )
             }
